@@ -1,0 +1,65 @@
+    // Imported Atlas curricula stay private even inside Rutinote's legacy collections.
+    function hasAtlasImport(data) { return data.keys().hasAny(['atlasImport']); }
+    function dataOwner(data) { return data.keys().hasAny(['userId']) && owner(data.userId); }
+    function safeImportUid() { return request.auth != null && request.auth.uid.matches('^[A-Za-z0-9_-]{1,128}$'); }
+    function importId(id, kind, sourceId) {
+      return safeImportUid() && sourceId is string && sourceId.matches('^[A-Za-z0-9_-]{1,150}$')
+        && id == 'atlas_' + kind + '_' + string(request.auth.uid.size()) + '_' + request.auth.uid + '_' + sourceId;
+    }
+    // Length-prefixed UIDs prevent one account's prefix from matching another account.
+    function ownImportKey(id, kind) {
+      return safeImportUid() && id is string
+        && id.matches('^atlas_' + kind + '_' + string(request.auth.uid.size()) + '_' + request.auth.uid + '_[A-Za-z0-9_-]+$');
+    }
+    function ownImportProject(id) { return ownImportKey(id, 'plan'); }
+    function importProjectPrefix(id) { return id is string && id.matches('^atlas_plan_.*'); }
+    function importTaskPrefix(id) { return id is string && id.matches('^atlas_day_.*'); }
+    function validImportProject(id, data) {
+      return dataOwner(data) && hasAtlasImport(data) && data.atlasImport is map
+        && data.atlasImport.version == 1 && importId(id, 'plan', data.atlasImport.planId)
+        && data.autoDailyTasks == false;
+    }
+    function validImportTask(id, data) {
+      return dataOwner(data) && hasAtlasImport(data) && data.atlasImport is map
+        && data.atlasImport.version == 1 && importId(id, 'day', data.atlasImport.lessonId)
+        && importId(data.projectId, 'plan', data.atlasImport.planId);
+    }
+    function legacyTaskWrite(id, data) {
+      return !importTaskPrefix(id) && !hasAtlasImport(data)
+        && (!data.keys().hasAny(['projectId']) || !importProjectPrefix(data.projectId) || dataOwner(data) && ownImportProject(data.projectId));
+    }
+    match /projects/{id} {
+      allow read, delete: if request.auth != null
+        && (!importProjectPrefix(id) || ownImportProject(id) || dataOwner(resource.data));
+      allow create: if request.auth != null
+        && (!importProjectPrefix(id) && !hasAtlasImport(request.resource.data) || validImportProject(id, request.resource.data));
+      allow update: if request.auth != null && (
+        !importProjectPrefix(id) && !hasAtlasImport(resource.data) && !hasAtlasImport(request.resource.data)
+        || dataOwner(resource.data) && validImportProject(id, request.resource.data)
+          && request.resource.data.atlasImport == resource.data.atlasImport
+      );
+      match /{subcollection}/{nested=**} {
+        allow read, write: if request.auth != null && !importProjectPrefix(id);
+      }
+    }
+    match /tasks/{id} {
+      allow read: if request.auth != null && (
+        !importTaskPrefix(id) || ownImportKey(id, 'day')
+        || dataOwner(resource.data)
+        // Legacy iOS deletes a project before querying tasks by projectId. Keep
+        // that flow working without depending on the deleted parent document.
+        || resource.data.keys().hasAny(['projectId']) && (
+          !importProjectPrefix(resource.data.projectId) || ownImportProject(resource.data.projectId)
+        )
+      );
+      allow create: if request.auth != null && (legacyTaskWrite(id, request.resource.data) || validImportTask(id, request.resource.data));
+      allow update: if request.auth != null && (
+        !importTaskPrefix(id) && !hasAtlasImport(resource.data) && legacyTaskWrite(id, request.resource.data)
+        || dataOwner(resource.data) && validImportTask(id, request.resource.data)
+          && request.resource.data.atlasImport == resource.data.atlasImport
+      );
+      allow delete: if request.auth != null && (!importTaskPrefix(id) && !hasAtlasImport(resource.data) || dataOwner(resource.data));
+      match /{subcollection}/{nested=**} {
+        allow read, write: if request.auth != null && !importTaskPrefix(id);
+      }
+    }

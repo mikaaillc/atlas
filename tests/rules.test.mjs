@@ -54,3 +54,41 @@ test('legacy recursive permissions do not bypass Atlas namespace ownership',asyn
  }
  await assertFails(setDoc(doc(env.authenticatedContext('alice').firestore(),'learningAtlas/alice'),{admin:true}));
 });
+
+const importedProjectId='atlas_plan_5_alice_english', importedTaskId='atlas_day_5_alice_english-1';
+const importedProject={userId:'alice',title:'Atlas plan',autoDailyTasks:false,totalTasks:1,completedDays:0,atlasImport:{version:1,planId:'english'}};
+const importedTask={userId:'alice',projectId:importedProjectId,title:'Imported day',status:'todo',atlasImport:{version:1,planId:'english',lessonId:'english-1'}};
+test('imported tasks and projects are writable/readable only by the correct account',async()=>{
+ const alice=env.authenticatedContext('alice').firestore();
+ await assertSucceeds(getDoc(doc(alice,'projects',importedProjectId)));
+ await assertSucceeds(getDoc(doc(alice,'tasks',importedTaskId)));
+ await assertSucceeds(setDoc(doc(alice,'projects',importedProjectId),importedProject));
+ await assertSucceeds(setDoc(doc(alice,'tasks',importedTaskId),importedTask));
+ for(const other of [env.authenticatedContext('bob').firestore(),env.unauthenticatedContext().firestore()]){
+  for(const [path,value]of [[`projects/${importedProjectId}`,importedProject],[`tasks/${importedTaskId}`,importedTask]]){
+   await assertFails(getDoc(doc(other,path)));await assertFails(setDoc(doc(other,path),value));await assertFails(deleteDoc(doc(other,path)));
+  }
+ }
+ await assertSucceeds(getDocs(query(collection(alice,'tasks'),where('userId','==','alice'))));
+ await assertSucceeds(getDocs(query(collection(alice,'projects'),where('userId','==','alice'))));
+ await assertSucceeds(getDocs(query(collection(alice,'tasks'),where('projectId','==',importedProjectId))));
+ await assertFails(getDocs(query(collection(env.authenticatedContext('bob').firestore(),'tasks'),where('projectId','==',importedProjectId))));
+});
+test('legacy iOS can edit imported task status/workspace and delete its project before task query',async()=>{
+ const db=env.authenticatedContext('alice').firestore();
+ await assertSucceeds(setDoc(doc(db,'tasks',importedTaskId),{...importedTask,status:'done',workspace:{notes:'My native note'}}));
+ await assertSucceeds(deleteDoc(doc(db,'projects',importedProjectId)));
+ await assertSucceeds(getDocs(query(collection(db,'tasks'),where('projectId','==',importedProjectId))));
+ await assertSucceeds(getDocs(query(collection(db,'tasks'),where('projectId','==','legacy-project-id'))));
+});
+test('import provenance cannot be stripped, reassigned, forged into legacy ids, or matched by a shorter UID',async()=>{
+ const db=env.authenticatedContext('alice').firestore();
+ await assertFails(setDoc(doc(db,'tasks',importedTaskId),{...importedTask,atlasImport:null}));
+ await assertFails(setDoc(doc(db,'tasks',importedTaskId),{...importedTask,userId:'bob'}));
+ await assertFails(setDoc(doc(db,'tasks',importedTaskId),{...importedTask,projectId:'legacy-project-id'}));
+ await assertFails(setDoc(doc(db,'tasks/legacy-id'),importedTask));
+ await assertFails(getDoc(doc(env.authenticatedContext('ali').firestore(),'tasks',importedTaskId)));
+ const prefixProject='atlas_plan_7_ali_foo_english';
+ await env.withSecurityRulesDisabled(async c=>{await setDoc(doc(c.firestore(),'tasks/atlas_day_7_ali_foo_english-1'),{userId:'ali_foo',projectId:prefixProject,atlasImport:{version:1,planId:'english',lessonId:'english-1'}});});
+ await assertFails(getDocs(query(collection(env.authenticatedContext('ali').firestore(),'tasks'),where('projectId','==',prefixProject))));
+});

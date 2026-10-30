@@ -34,3 +34,9 @@ Atlas’ın ayrı web alanında tarayıcı oturumu ayrıca açılabilir; aynı G
 6. İki uygulamanın testlerini ve derlemelerini çalıştır. iOS source map'inde yeni Atlas/web ekran modülleri bulunmamalı. Native dosyalar, SDK yapılandırması ve bağımlılıklar değişmemeli.
 
 Bu doküman yönetici anahtarları, kullanıcı e-posta adresleri, gerçek UID eşleştirmeleri veya kişisel çalışma notları içermez.
+
+## İsteğe bağlı görev aktarımı
+
+İlk backend taşınması native kayıtlara yazmadı. Sonraki web özelliği **Rutinote → Araçlar → Atlas → Atlas’tan görevleri aktar**, kullanıcının seçtiği günleri açıkça `tasks`/`projects` içine bağımsız kopyalar olarak aktarır. Özgün tarihler, tüm günlük adımlar ve kaynak linkleri çalışma alanında korunur. Tekrarlı/eşzamanlı aktarım görev çoğaltmaz; önceki notları ve görev durumunu değiştirmez. Atlas kutuları canlı ortak ilerlemeye, aktarılan görevler ise kendi durumlarına sahiptir.
+
+Kopyalanan özel dersleri korumak için genel legacy izin `tasks`/`projects` köklerini de hariç tutar. `firestore.rutinote-transfer.rules` parçası birleşik `firestore.rules` içinde yer alır: rezerve UID uzunluğu içeren kimlikler, değiştirilemeyen kaynak/sahiplik ve kendi hesaba okuma/yazma kontrolleri. Legacy kayıtlardaki önceki izinler korunur; native iOS’un önce projeyi silip sonra alt görevleri sorgulaması da desteklenir. Bu yeni birleşik kurallar görev aktarımı istemcisi yayınlanmadan önce uygulanmalıdır.

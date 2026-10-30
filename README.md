@@ -59,7 +59,7 @@ learningAtlas/{uid}/progress/{lessonId}  # owner only
 learningAtlas/{uid}/words/{wordId}       # owner only
 ```
 
-Rutinote’un mevcut `users`, `tasks`, `notes`, `projects` ve diğer iOS koleksiyonları korunur. `firestore.rules` Rutinote için birleşik canlı kural kaynağıdır; `firestore.rutinote.baseline.rules` taşınma öncesindeki kurallardır. Eski genel recursive izin, Atlas koleksiyonlarını hariç tutar; aksi hâlde özel Atlas kurallarını geçersiz kılardı. Atlas dışındaki erişim davranışı emülatörde önceki kurallarla karşılaştırılır.
+Rutinote’un mevcut `users`, `tasks`, `notes`, `projects` ve diğer iOS koleksiyonları korunur. `firestore.rules` Rutinote için birleşik canlı kural kaynağıdır; `firestore.rutinote.baseline.rules` taşınma öncesindeki kurallardır. Eski genel recursive izin, Atlas koleksiyonlarını ve özel aktarım kuralları bulunan tasks/projects köklerini hariç tutar; aksi hâlde özel Atlas kurallarını geçersiz kılardı. Atlas dışındaki erişim davranışı emülatörde önceki kurallarla karşılaştırılır.
 
 `firestore.atlas.rules` yalnızca Atlas kural parçasıdır; paylaşılan veritabanına tek başına uygulanmaz. `firestore.batterylook.baseline.rules` geçmişte kullanılan backend’in tarihsel kopyasıdır ve Rutinote’a uygulanmaz. Firebase kural yayını her zaman açık proje seçimiyle yapılır; örneğin `firebase deploy --only firestore:rules --project rutinote`.
 
@@ -118,3 +118,5 @@ Yeni kişisel planlar önceki gibi `learningAtlas/{uid}/plans` altında sahibine
 ## GitHub gönderim kapsamı
 
 Depoya uygulama kaynak kodu, testler, boş ortam şablonu ve Vercel yapılandırması eklenir. `.env.local`, `private/` öğrenme içerikleri, gerçek kullanıcı kimliği içeren doğrulama raporları, `dist/` ve `node_modules/` dışlanır. Testlerde gerçek kullanıcı UID'si yerine sentetik bir test UID'si kullanılır.
+
+Rutinote web’de **Araçlar → Atlas** aynı ilerlemeyi yönetir. **Atlas’tan görevleri aktar** ekranı seçili günleri tarihleri, günlük adımları ve kaynak linkleriyle ayrı Rutinote görevlerine aktarır; mevcut kopyalar ezilmez. Görevlerin tamamlanması Atlas kutularını otomatik değiştirmez. Aktarım kuralları ve veri sınırları için [ortak backend notları](docs/RUTINOTE-MIGRATION.md).
