@@ -1,0 +1,3 @@
+{
+  "firestore": [{"database":"learning-atlas","rules":"firestore.rules"}]
+}

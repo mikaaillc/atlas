@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.firebase/
+*.tsbuildinfo
+
+# Learning content and per-user reports remain local / in protected Firestore.
+/private/
+/*-verification.json
+/firebase-integration.json
+.DS_Store
