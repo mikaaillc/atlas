@@ -1,11 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Atlas namespace. Existing BatteryLook permissions above are preserved.
+    // Atlas-only namespaces in the shared Rutinote database.
     function owner(uid) { return request.auth != null && request.auth.uid == uid; }
     function text(s, max) { return s is string && s.size() <= max; }
     function date(s) { return s is string && s.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
-    // Dedicated namespace. No access to batteryLook /users documents.
+    // Private learning records; existing Rutinote collections are handled separately.
     match /learningAtlas/{uid}/progress/{id} {
       allow read, delete: if owner(uid);
       allow create, update: if owner(uid)

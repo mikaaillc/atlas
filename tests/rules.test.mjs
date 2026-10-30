@@ -7,9 +7,20 @@ const word={id:'w1',word:'reliable',meaning:'güvenilir',definition:'can be trus
 test('owner can save and read own lessons and vocabulary',async()=>{const db=env.authenticatedContext('alice').firestore();await assertSucceeds(setDoc(doc(db,'learningAtlas/alice/progress/english-1'),progress));await assertSucceeds(getDoc(doc(db,'learningAtlas/alice/progress/english-1')));await assertSucceeds(setDoc(doc(db,'learningAtlas/alice/words/w1'),word));await assertSucceeds(getDocs(collection(db,'learningAtlas/alice/words')));});
 test('other account and anonymous clients cannot access private data',async()=>{for(const db of [env.authenticatedContext('bob').firestore(),env.unauthenticatedContext().firestore()]){const ref=doc(db,'learningAtlas/alice/progress/english-1');await assertFails(getDoc(ref));await assertFails(setDoc(ref,progress));await assertFails(deleteDoc(ref));await assertFails(getDocs(collection(db,'learningAtlas/alice/words')));}});
 test('invalid payloads are denied',async()=>{const db=env.authenticatedContext('alice').firestore();const ref=doc(db,'learningAtlas/alice/progress/english-1');for(const change of [{score:3},{notes:'x'.repeat(20001)},{checks:[null]},{admin:true},{id:'english-2'}])await assertFails(setDoc(ref,{...progress,...change}));for(const change of [{stage:5},{lessonDay:547},{word:''},{admin:true}])await assertFails(setDoc(doc(db,'learningAtlas/alice/words/w1'),{...word,...change}));});
-test('BatteryLook original owner access remains unchanged',async()=>{const db=env.authenticatedContext('alice').firestore();await assertSucceeds(setDoc(doc(db,'users/alice'),{name:'Existing app user'}));await assertSucceeds(getDoc(doc(db,'users/alice')));await assertFails(getDoc(doc(env.authenticatedContext('bob').firestore(),'users/alice')));await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(),'users/alice')));});
-test('BatteryLook device and history validation remains unchanged',async()=>{const db=env.authenticatedContext('alice').firestore();const {Timestamp}=await import('firebase/firestore');const device=doc(db,'users/alice/devices/test-device');await assertSucceeds(setDoc(device,{name:'Test device',kind:'iPhone',updatedAt:Timestamp.now(),lowBatteryThreshold:20}));await assertFails(setDoc(device,{name:'Test device',kind:'iPhone',updatedAt:Timestamp.now(),lowBatteryThreshold:1}));const history=doc(db,'users/alice/devices/test-device/history/reading1');await assertSucceeds(setDoc(history,{level:75}));await assertFails(setDoc(history,{level:76}));await assertFails(getDoc(doc(env.authenticatedContext('bob').firestore(),'users/alice/devices/test-device')));});
-test('unrelated namespaces remain closed',async()=>{const db=env.authenticatedContext('alice').firestore();await assertFails(setDoc(doc(db,'other/data'),{admin:true}));});
+test('Rutinote native collection access is identical to the original deployed rules',async()=>{
+ const baseline=await initializeTestEnvironment({projectId:'demo-rutinote-baseline',firestore:{rules:fs.readFileSync('firestore.rutinote.baseline.rules','utf8'),host:'127.0.0.1',port:8080}});
+ try {
+  const paths=['users/alice','users/bob','tasks/native-task','notes/native-note','projects/native-project','meetings/native-meeting','users/alice/devices/phone','users/alice/devices/phone/history/reading','other/data','learningAtlasArchive/legacy'];
+  for(const uid of ['alice','bob',null])for(const path of paths){
+   for(const target of [baseline,env]){
+    const db=uid?target.authenticatedContext(uid).firestore():target.unauthenticatedContext().firestore();
+    const ref=doc(db,path),check=uid?assertSucceeds:assertFails;
+    await check(setDoc(ref,{title:'Existing native record',legacyField:true}));
+    await check(getDoc(ref));await check(deleteDoc(ref));
+   }
+  }
+ } finally {await baseline.cleanup();}
+});
 const planId='custom_'+'a'.repeat(32);
 const metadata={id:planId,title:'New learning goal',description:'My plan',startDate:'2026-11-02',endDate:'2026-11-02',dailyMinutes:45,studyDays:[1,2,3,4,5],dayCount:1,schemaVersion:1,source:'custom',status:'ready',hasPdf:false,color:'violet',createdAt:'2026-10-30',updatedAt:'2026-10-30'};
 const lesson={id:planId+'_1',track:planId,planId,day:1,date:'2026-11-02',level:'Kişisel plan',week:1,minutes:45,title:'New lesson',focus:'Practice',kind:'Günlük çalışma',tasks:['Read and build an example.'],links:[{label:'Docs',url:'https://example.org/docs'}],page:0};
@@ -34,4 +45,12 @@ test('catalog queries return only assignments, while unfiltered catalog access i
  await assertFails(getDocs(collection(ownerDb,'learningAtlasCatalog')));
  await assertFails(getDocs(query(collection(other,'learningAtlasCatalog'),where('ownerUid','==',assignedUid))));
  await assertFails(getDocs(collection(env.unauthenticatedContext().firestore(),'learningAtlasCatalog')));
+});
+
+test('legacy recursive permissions do not bypass Atlas namespace ownership',async()=>{
+ const db=env.authenticatedContext('bob').firestore();
+ for(const path of ['learningAtlas/alice','learningAtlas/alice/progress/english-1','learningAtlas/alice/words/w1','learningAtlasCatalog/english','learningAtlasCatalog/english/lessons/english-1']){
+  await assertFails(getDoc(doc(db,path)));await assertFails(setDoc(doc(db,path),{admin:true}));
+ }
+ await assertFails(setDoc(doc(env.authenticatedContext('alice').firestore(),'learningAtlas/alice'),{admin:true}));
 });

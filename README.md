@@ -1,6 +1,6 @@
 # Atlas — Kişisel öğrenme platformu
 
-React + TypeScript + Vite; Firebase Authentication + Firestore. Koyu ve responsive arayüz. Aynı BatteryLook Firebase projesinde ayrı Atlas veri alanları kullanır. Vercel'e web sitesi deployment yapılmadı.
+React + TypeScript + Vite; Firebase Authentication + Firestore. Koyu ve responsive arayüz. Rutinote ile aynı Firebase Authentication projesini ve varsayılan Firestore veritabanını kullanır. Atlas verileri ayrı ve kullanıcıya özel koleksiyonlarda tutulur. Canlı Atlas adresi: https://atlas-rose-omega.vercel.app/.
 
 ## Çalıştırma
 
@@ -59,9 +59,13 @@ learningAtlas/{uid}/progress/{lessonId}  # owner only
 learningAtlas/{uid}/words/{wordId}       # owner only
 ```
 
-BatteryLook'un `users/...` kuralları korunur. `firestore.rules` mevcut canlı birleşik kurallardır; `firestore.batterylook.baseline.rules` entegrasyon öncesi orijinal kopyadır. `firestore.atlas.rules` ayrı projeye yönelik Atlas kopyasıdır; paylaşılan veritabanına tek başına uygulanmaz.
+Rutinote’un mevcut `users`, `tasks`, `notes`, `projects` ve diğer iOS koleksiyonları korunur. `firestore.rules` Rutinote için birleşik canlı kural kaynağıdır; `firestore.rutinote.baseline.rules` taşınma öncesindeki kurallardır. Eski genel recursive izin, Atlas koleksiyonlarını hariç tutar; aksi hâlde özel Atlas kurallarını geçersiz kılardı. Atlas dışındaki erişim davranışı emülatörde önceki kurallarla karşılaştırılır.
 
-Authentication aynı Firebase projesinin mevcut Google sağlayıcısını kullanır. E-posta sağlayıcısı canlı projede kapalıdır ve bu ayar değiştirilmedi. Özel sunucu anahtarları, service-account JSON veya CLI token'ları projeye kopyalanmaz. `.env.local` sadece Firebase web istemci alanlarını içerir; Git ve ZIP dışındadır. Firebase istemci alanlarının niteliği için [resmî açıklama](https://firebase.google.com/docs/projects/api-keys).
+`firestore.atlas.rules` yalnızca Atlas kural parçasıdır; paylaşılan veritabanına tek başına uygulanmaz. `firestore.batterylook.baseline.rules` geçmişte kullanılan backend’in tarihsel kopyasıdır ve Rutinote’a uygulanmaz. Firebase kural yayını her zaman açık proje seçimiyle yapılır; örneğin `firebase deploy --only firestore:rules --project rutinote`.
+
+Authentication, Rutinote’un mevcut Google ve e-posta sağlayıcılarını kullanır. İki uygulamadaki aynı hesap aynı Firebase UID değerini kullanır. Rutinote web öğrenme alanında ikinci Firebase uygulaması veya ayrı Atlas girişi yoktur. Ayrı web alan adları tarayıcı oturumunu otomatik paylaşmaz; bağımsız Atlas sayfası aynı hesapla bir defa giriş isteyebilir.
+
+Özel sunucu anahtarları, service-account JSON veya CLI token’ları projeye kopyalanmaz. `.env.local` yalnızca public Firebase web SDK alanlarını içerir ve Git dışındadır. Firebase istemci alanlarının niteliği için [resmî açıklama](https://firebase.google.com/docs/projects/api-keys). Taşınma sınırları: [Rutinote geçiş notları](docs/RUTINOTE-MIGRATION.md).
 
 ## Özgün kaynaklar ve yeniden aktarım
 
@@ -77,9 +81,9 @@ Authentication aynı Firebase projesinin mevcut Google sağlayıcısını kullan
 ## Vercel kurulumu
 
 1. Projeyi kendi deponuzdan Vercel'e aktarın. Framework: Vite; install `npm ci`; build `npm run build`; çıktı `dist`.
-2. `.env.local` içindeki web istemci alanlarını Vercel ortam değişkenlerine kendiniz ekleyin. `VITE_USE_EMULATORS=false`, `VITE_AUTH_GOOGLE_ENABLED=true`, `VITE_AUTH_EMAIL_ENABLED=false`, `VITE_FIREBASE_RULES_READY=true` olmalı.
+2. `.env.local` içindeki web istemci alanlarını Vercel ortam değişkenlerine kendiniz ekleyin. `VITE_USE_EMULATORS=false`, `VITE_AUTH_GOOGLE_ENABLED=true`, `VITE_AUTH_EMAIL_ENABLED=true`, `VITE_FIREBASE_RULES_READY=true` olmalı.
 3. Vercel/custom alan adınızı Firebase Authentication yetkili alan adlarına ekleyin. Ortam değişkeni değişiminden sonra yeniden build gerekir.
-4. Mevcut Firebase projesindeki katalog ve kurallar hazırdır. Başka bir Firebase projesine geçiş ayrıca özel kataloğun yönetici tarafından aktarılmasını ve kuralların o projede kurulmasını gerektirir.
+4. Rutinote Firebase projesindeki katalog ve kurallar hazırdır. Başka bir Firebase projesine geçiş ayrıca özel kataloğun yönetici tarafından aktarılmasını ve kuralların o projede kurulmasını gerektirir.
 
 Yeni kişisel öğrenme planları uygulamadan eklenir; yeniden deployment gerekmez. `vercel.json` statik çıktı/yönlendirme/yanıt başlıklarını içerir. Navigasyon hash tabanlıdır.
 
@@ -95,7 +99,7 @@ npm run test:sources
 python3 scripts/verify_sources.py
 ```
 
-10 genel mantık/format testi, yerel kaynaklarla 5 ek içerik/takvim testi ve 10 güvenlik kuralı testi başarılıdır. Yeni bir Git klonunda `npm test` özel kaynaklara ihtiyaç duymaz. Üretim dosyalarında ders içeriği/PDF bulunmadığı ayrıca kontrol edilir. Giriş, plan önizleme/aktarma, günlük kayıt, sayfa yenilemede korunma ve çıkış sonrası gizlenme ayrı demo Auth + Firestore emülatöründe tarayıcıdan test edildi. Gerçek Google popup girişi otomatik yapılmadı.
+10 genel mantık/format testi, yerel kaynaklarla 5 ek içerik/takvim testi ve güncel güvenlik kuralı testleri başarılıdır. Yeni bir Git klonunda `npm test` özel kaynaklara ihtiyaç duymaz. Üretim dosyalarında ders içeriği/PDF bulunmadığı ayrıca kontrol edilir. Giriş, plan önizleme/aktarma, günlük kayıt, sayfa yenilemede korunma ve çıkış sonrası gizlenme ayrı demo Auth + Firestore emülatöründe tarayıcıdan test edildi. Gerçek Google popup girişi otomatik yapılmadı.
 
 `npm run test:rules` yalnızca `demo-learning-atlas` yerel Firestore emülatörünü kullanır; Java 21+ gerekir. `scripts/seed-qa-emulator.mjs` sadece bu sabit demo projesine küçük QA verisi ekler; üretim için kullanılmaz.
 

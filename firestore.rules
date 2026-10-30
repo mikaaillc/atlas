@@ -1,45 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function owns(uid) {
-      return request.auth != null && request.auth.uid == uid;
+    // Preserve existing Rutinote/iOS behavior outside the two Atlas namespaces.
+    // An unrestricted recursive match would also grant access to private Atlas data.
+    match /{collection}/{document=**} {
+      allow read, write: if request.auth != null
+        && !(collection in ['learningAtlas', 'learningAtlasCatalog']);
     }
 
-    match /users/{uid} {
-      allow read, write: if owns(uid);
-
-      match /devices/{deviceId} {
-        allow read: if owns(uid);
-        allow create, update: if owns(uid)
-          && request.resource.data.name is string
-          && request.resource.data.kind is string
-          && request.resource.data.updatedAt is timestamp
-          && request.resource.data.lowBatteryThreshold is int
-          && request.resource.data.lowBatteryThreshold >= 5
-          && request.resource.data.lowBatteryThreshold <= 50;
-        allow delete: if owns(uid);
-
-        match /history/{readingId} {
-          allow read: if owns(uid);
-          allow create: if owns(uid)
-            && request.resource.data.level is int
-            && request.resource.data.level >= 0
-            && request.resource.data.level <= 100;
-          allow update: if false;
-          allow delete: if owns(uid);
-        }
-      }
-
-      match /tokens/{token} {
-        allow read, write: if owns(uid);
-      }
-    }
-
-    // Atlas namespace. Existing BatteryLook permissions above are preserved.
+    // Atlas-only namespaces in the shared Rutinote database.
     function owner(uid) { return request.auth != null && request.auth.uid == uid; }
     function text(s, max) { return s is string && s.size() <= max; }
     function date(s) { return s is string && s.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
-    // Dedicated namespace. No access to batteryLook /users documents.
+    // Private learning records; existing Rutinote collections are handled separately.
     match /learningAtlas/{uid}/progress/{id} {
       allow read, delete: if owner(uid);
       allow create, update: if owner(uid)
