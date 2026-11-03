@@ -1,0 +1,35 @@
+/* Phone layouts share the same lesson routes and form controls as desktop. */
+@media (max-width: 760px) {
+  .topbar { gap: 8px; padding-inline: 12px; }
+  .topbar .breadcrumb { display: none; }
+  .topbar .search-wrap { flex: 1; min-width: 0; }
+  .topbar .search-wrap input { width: 100%; min-width: 0; font-size: 16px; }
+  .topbar .avatar, .topbar .mobile-toggle { min-width: 44px; min-height: 44px; }
+  .sidebar.open { width: min(300px, 88vw); overflow-y: auto; overscroll-behavior: contain; bottom: 0; height: auto; }
+  .mobile-scrim { position: fixed; inset: 65px 0 0; background: #0a061ba8; z-index: 41; border: 0; width: 100%; }
+  .sidebar.open { z-index: 42; }
+  main { padding-inline: clamp(12px, 4vw, 24px); }
+  .page-heading { flex-wrap: wrap; gap: 8px; }
+  .page-heading h1, .lesson-heading h1 { font-size: clamp(24px, 6.5vw, 32px); overflow-wrap: anywhere; }
+  .page-heading p, .lesson-heading p, .plan-workflow p, .track-card > p { font-size: 14px; line-height: 1.55; }
+  .lesson-row-main, .panel, .academy-columns > *, .my-plan, .field, .filters > * { min-width: 0; overflow-wrap: anywhere; }
+  .filters, .lesson-tags, .section-title, .pagination, .workflow-actions, .my-plan-footer { flex-wrap: wrap; }
+  .filters .tabs { flex-basis: 100%; }
+  .button, .tabs button, .pagination button, .weekday-picker label, .academy-question label, .sidebar nav a { min-height: 44px; }
+  .tabs button, .pagination button, .page-heading > .button { font-size: 13px; }
+  .field input, .field select, .field textarea, .filters input, .filters select { font-size: 16px; max-width: 100%; }
+  .field select { width: 100%; }
+  .modal-overlay { padding: 8px; }
+  .modal { width: 100%; max-width: 540px; max-height: calc(100dvh - 16px); overflow-y: auto; overscroll-behavior: contain; padding: 24px 16px max(20px, env(safe-area-inset-bottom)); }
+  .plan-import .tabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .plan-import .tabs button { white-space: normal; padding: 8px 4px; }
+  .plan-preview-days { max-height: none; overflow: visible; }
+  .plan-preview-days ul, .plan-workflow p, .small-note { font-size: 13px; }
+  .plan-file input, .academy-recorder audio { min-width: 0; max-width: 100%; }
+  .academy-resources { grid-template-columns: minmax(0,1fr); }
+  .academy-banner, .academy .panel { padding: 18px; }
+  .academy-answer, .academy-example, .task, .word-card, .plan-preview-days { overflow-wrap: anywhere; }
+  .academy-pdf a { display: flex; justify-content: center; align-items: center; min-height: 44px; }
+  .toast { max-width: calc(100vw - 24px); }
+}
+@media (min-width: 761px) { .mobile-scrim { display: none; } }
