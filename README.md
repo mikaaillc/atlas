@@ -120,3 +120,20 @@ Yeni kişisel planlar önceki gibi `learningAtlas/{uid}/plans` altında sahibine
 Depoya uygulama kaynak kodu, testler, boş ortam şablonu ve Vercel yapılandırması eklenir. `.env.local`, `private/` öğrenme içerikleri, gerçek kullanıcı kimliği içeren doğrulama raporları, `dist/` ve `node_modules/` dışlanır. Testlerde gerçek kullanıcı UID'si yerine sentetik bir test UID'si kullanılır.
 
 Rutinote web’de **Araçlar → Atlas** aynı ilerlemeyi yönetir. **Atlas’tan görevleri aktar** ekranı seçili günleri tarihleri, günlük adımları ve kaynak linkleriyle ayrı Rutinote görevlerine aktarır; mevcut kopyalar ezilmez. Görevlerin tamamlanması Atlas kutularını otomatik değiştirmez. Aktarım kuralları ve veri sınırları için [ortak backend notları](docs/RUTINOTE-MIGRATION.md).
+
+
+## English Academy entegrasyonu — 3 Kasım 2026
+
+Mevcut React/Firebase projesine, indirilen `Learning_Atlas_2_0_Ingilizce_Ogretmeni_AWS_Vercel.zip` içindeki 546 günlük `teacher.json` doğrudan uyarlanmıştır. Ayrı uygulama ya da farklı veritabanı sistemi kullanılmaz.
+
+- Takvim: 3 Kasım 2026–1 Mayıs 2028; 78 hafta, A2/B1/B2/C1, 1.248 çoktan seçmeli soru kaydı.
+- Akademi ekranı Türkçe anlatım, İngilizce örnekler, sesli okuma, açıklamalı test, yazma/konuşma görevleri ve kelime ekleme sunar.
+- Mevcut İngilizce katalog dersleri görüntülenirken akademi takvimi ve görevleri uygulanır; bulut katalog belgeleri değiştirilmez. Ders kimlikleri, eski ilerleme, yazılar ve kelimeler korunur. Önceki kaynak/görevler ders ekranında açılır bölümde bulunur. Önceki işaretler yeni akışta da korunur; ihtiyaç halinde kullanıcı bunları değiştirebilir.
+- Test puanı mevcut `score/total`, yazı mevcut `notes/correction/evidence` alanlarına kaydedilir. Puan kontrolünden sonra “İlerlemeyi kaydet” gerekir. İşaretlenen tek tek test seçenekleri oturum içinde kalır; kalıcı olan son puandır.
+- Ses kayıtları hesap ve ders anahtarıyla IndexedDB içinde yalnızca bu tarayıcıda saklanır, indirilebilir ve silinebilir. Bulut ses depolaması yoktur; yeni kayıt öncekinin yerini alır. Mikrofon izni, HTTPS veya localhost gerekir; fiziksel mikrofon testi yapılmamıştır.
+- Kelime defteri ve +1/+3/+7/+14 tekrarları mevcut Firebase kayıt sistemiyle çalışır.
+- İstenen PDF `public/sources/Ingilizce_A2_C1_546_Gun_Turkce_Gorev_Kelime_Defteri.pdf` varlığıdır ve arayüzde aç/indir bağlantıları vardır. Kullanıcı talebiyle bu PDF ve Akademi öğretim içeriği yayımlanacak statik varlıklardır; kişisel ilerleme ve eski özel katalog erişimleri değişmez. Özgün PDF’nin 30 Ekim tarihleri değiştirilmemiştir; yeni takvim gün numarasıyla eşleşir.
+- Busuu hesap içi ders kimlikleri ve Reader at Work baskı/sayfa bilgileri kaynakta bulunmaz. Konu/kategori eşleşmeleri bu nedenle açıkça etiketlidir. News in Levels haberleri de kategori/seviye üzerinden seçilir. Kesin metin/ders seçimi çalışma kanıtı alanında saklanabilir.
+- AWS’nin 112 iş günlük içeriği, mevcut Firebase bağlantısı, kurallar, .env dosyaları ve Rutinote entegrasyonu değiştirilmemiştir.
+
+Doğrulama: `npm test` (14 test), `npm run test:sources` (5 test), `npm run test:rules` (12 test), `npm run test:privacy`, `npm run build`. Vercel ayarı mevcut `npm run build` → `dist` akışını kullanır; deploy yapılmamıştır. `tests/academy-ui.html` yalnızca Vite geliştirme sunucusunda bağımsız UI testi içindir; üretim paketine eklenmez. Yerel emülatör hesabıyla 658 ders yüklenmiş, 3/3 puan ve yazılı not kaydedilip sayfa yenilenince korunması doğrulanmıştır.

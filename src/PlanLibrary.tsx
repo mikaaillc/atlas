@@ -3,13 +3,15 @@ import {collection,doc,getDocs,onSnapshot,writeBatch,query,where} from 'firebase
 import {db} from './firebase';
 import {today} from './core.mjs';
 import {parsePlan,schedulePlan} from './plan-format.mjs';
+import {academyOverlay} from './academy-core.mjs';
+import academy from './data/academy.json';
 import type {Lesson,Plan} from './types';
 type Library={plans:Plan[];lessons:Lesson[];english:Lesson[];aws:Lesson[];all:Lesson[];loading:boolean;error:string;guidePages:{page:number;text:string}[];importPlan:(input:unknown)=>Promise<string>;openPdf:(track:string,page?:number)=>Promise<void>};
 const Context=createContext<Library|null>(null);
 export function PlanProvider({uid,children}:{uid:string;children:ReactNode}){
  const [plans,setPlans]=useState<Plan[]>([]),[lessons,setLessons]=useState<Lesson[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  useEffect(()=>{if(!db)return;let active=true,revision=0;let catalog:Plan[]|null=null,personal:Plan[]|null=null;
-  const refresh=async()=>{if(catalog===null||personal===null)return;const rev=++revision;try{const metadata=[...catalog.filter(p=>p.ownerUid===uid),...personal].filter(p=>p.status==='ready');const groups=await Promise.all(metadata.map(async p=>{const path=p.source==='catalog'?collection(db!,'learningAtlasCatalog',p.id,'lessons'):collection(db!,'learningAtlas',uid,'plans',p.id,'lessons');const snap=await getDocs(path);const rows=snap.docs.map(d=>d.data() as Lesson).sort((a,b)=>a.day-b.day);if(rows.length!==p.dayCount)throw Error('Plan günleri henüz tam yüklenmedi.');return rows;}));if(active&&rev===revision){setPlans(metadata);setLessons(groups.flat());setError('');setLoading(false);}}catch{if(active&&rev===revision){setError('Planlar yüklenemedi. Bağlantını kontrol edip sayfayı yenile.');setLoading(false);}}};
+  const refresh=async()=>{if(catalog===null||personal===null)return;const rev=++revision;try{const metadata=[...catalog.filter(p=>p.ownerUid===uid),...personal].filter(p=>p.status==='ready');const groups=await Promise.all(metadata.map(async p=>{const path=p.source==='catalog'?collection(db!,'learningAtlasCatalog',p.id,'lessons'):collection(db!,'learningAtlas',uid,'plans',p.id,'lessons');const snap=await getDocs(path);const rows=snap.docs.map(d=>d.data() as Lesson).sort((a,b)=>a.day-b.day);if(rows.length!==p.dayCount)throw Error('Plan günleri henüz tam yüklenmedi.');return rows;}));if(active&&rev===revision){setPlans(metadata.map(p=>p.id==='english'?{...p,startDate:academy[0].date,endDate:academy.at(-1)!.date,title:'İngilizce Akademisi · A2 → C1'}:p));setLessons(academyOverlay(groups.flat(),academy));setError('');setLoading(false);}}catch{if(active&&rev===revision){setError('Planlar yüklenemedi. Bağlantını kontrol edip sayfayı yenile.');setLoading(false);}}};
   const failure=()=>{if(active){setError('Planlarına erişilemedi. Oturumunu ve bağlantını kontrol et.');setLoading(false);}};
   const a=onSnapshot(query(collection(db,'learningAtlasCatalog'),where('ownerUid','==',uid)),s=>{catalog=s.docs.map(d=>d.data() as Plan);void refresh();},failure);
   const b=onSnapshot(collection(db,'learningAtlas',uid,'plans'),s=>{personal=s.docs.map(d=>d.data() as Plan);void refresh();},failure);
